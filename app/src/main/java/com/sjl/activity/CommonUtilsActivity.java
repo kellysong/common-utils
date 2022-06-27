@@ -1,7 +1,7 @@
 package com.sjl.activity;
 
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.sjl.arrowstepview.R;
 import com.sjl.util.LogUtils;
