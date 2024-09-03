@@ -9,6 +9,10 @@ import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.os.Build;
 import android.util.Base64;
 
@@ -19,6 +23,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * 位图操作工具类
@@ -33,6 +38,7 @@ public class BitmapUtils {
     /**
      * bitmap转为base64
      *
+     * @see BitmapUtils#base64ToBitmap(String)   配套使用
      * @param bitmap
      * @param quality
      * @return
@@ -77,13 +83,12 @@ public class BitmapUtils {
 
     /**
      * 把bitmap转成图片输出到指定SD卡路径(常规方法)
-     *
-     * @param bitmap      位图
+     *  @param bitmap      位图
      * @param outFilePath 输出文件路径
      * @param fileName    文件名
      * @param quality     压缩质量
      */
-    public static void saveBitmapToFile(Bitmap bitmap, String outFilePath, String fileName, int quality) {
+    public static File saveBitmapToFile(Bitmap bitmap, String outFilePath, String fileName, int quality) {
         File dir = new File(outFilePath);
         if (!dir.exists()) {
             dir.mkdirs();
@@ -102,11 +107,13 @@ public class BitmapUtils {
             }
             out.flush();
             out.close();
+            return file;
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return null;
     }
 
 
@@ -138,6 +145,8 @@ public class BitmapUtils {
             e.printStackTrace();
         }
     }
+
+
 
     /**
      * 获取Bitmap任意透明度
@@ -518,17 +527,33 @@ public class BitmapUtils {
     }
 
     /**
-     * bitmap转字节数组
+     * bitmap转字节数组(带压缩)
      *
      * @param bitmap
      * @param quality
      * @return
      */
-    public static byte[] bitmapToByteArr(Bitmap bitmap, int quality) {
+    public static byte[] bitmapToByteArrWithCompress(Bitmap bitmap, int quality) {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);// (0 - 100)压缩文件
         byte[] bytes = stream.toByteArray();
         return bytes;
+    }
+
+
+    /**
+     * bitmap转字节数组
+     *
+     * @see BitmapUtils#byteArrToBitmap(byte[]) 配套使用
+     * @param bitmap
+     * @return
+     */
+    public static byte[] bitmapToByteArr(Bitmap bitmap) {
+        int bytes = bitmap.getByteCount();
+        ByteBuffer buf = ByteBuffer.allocate(bytes);
+        bitmap.copyPixelsToBuffer(buf);
+        byte[] byteArray = buf.array();
+        return byteArray;
     }
 
     /**
@@ -540,5 +565,56 @@ public class BitmapUtils {
     public static Bitmap byteArrToBitmap(byte[] bytes) {
         Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
         return bitmap;
+    }
+
+    /**
+     * 合并bitmap
+     * @param background
+     * @param foreground
+     * @return
+     */
+    public static Bitmap mergeBitmap(Bitmap background, Bitmap foreground) {
+        int bgWidth = background.getWidth();
+        int bgHeight = background.getHeight();
+        int fgWidth = foreground.getWidth();
+        int fgHeight = foreground.getHeight();
+        background.eraseColor(Color.WHITE);
+        Bitmap temp = Bitmap.createBitmap(bgWidth, bgHeight, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(temp);
+        canvas.drawBitmap(background, 0, 0, null);
+        canvas.drawBitmap(foreground, (bgWidth - fgWidth) / 2, (bgHeight - fgHeight) / 2, null);
+        canvas.save();
+        canvas.restore();
+        return temp;
+    }
+
+    /**
+     * 制作圆角bitmap
+     * @param mBitmap
+     * @param index
+     * @return
+     */
+    public static Bitmap roundBitmap(Bitmap mBitmap, float index){
+        Bitmap bitmap = Bitmap.createBitmap(mBitmap.getWidth(), mBitmap.getHeight(), Bitmap.Config.ARGB_8888);
+
+        Canvas canvas = new Canvas(bitmap);
+        Paint paint = new Paint();
+        paint.setAntiAlias(true);
+
+        //设置矩形大小
+        Rect rect = new Rect(0,0,mBitmap.getWidth(),mBitmap.getHeight());
+        RectF rectf = new RectF(rect);
+
+        // 相当于清屏
+        canvas.drawARGB(0, 0, 0, 0);
+        //画圆角
+        canvas.drawRoundRect(rectf, index, index, paint);
+        // 取两层绘制，显示上层
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+
+        // 把原生的图片放到这个画布上，使之带有画布的效果
+        canvas.drawBitmap(mBitmap, rect, rect, paint);
+        return bitmap;
+
     }
 }

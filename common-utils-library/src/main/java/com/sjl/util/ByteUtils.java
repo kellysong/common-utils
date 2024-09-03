@@ -1,5 +1,9 @@
 package com.sjl.util;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * 字节操作工具类
  *
@@ -94,7 +98,48 @@ public class ByteUtils {
         return sbu.toString();
     }
 
+    /**
+     * ASCII码转换为16进制
+     * @param ascii
+     * @return
+     */
+    public static String  asciiToToHex(String ascii){
 
+        char[] chars = ascii.toCharArray();
+
+        StringBuffer hex = new StringBuffer();
+        for(int i = 0; i < chars.length; i++){
+            hex.append(Integer.toHexString((int)chars[i]));
+        }
+
+        return hex.toString();
+    }
+
+    /**
+     * 16进制转换为ASCII
+     * @param hex
+     * @return
+     */
+    public static String hexToAscii(String hex){
+
+        StringBuilder sb = new StringBuilder();
+        StringBuilder temp = new StringBuilder();
+
+        //49204c6f7665204a617661 split into two characters 49, 20, 4c...
+        for( int i=0; i<hex.length()-1; i+=2 ){
+
+            //grab the hex in pairs
+            String output = hex.substring(i, (i + 2));
+            //convert hex to decimal
+            int decimal = Integer.parseInt(output, 16);
+            //convert the decimal to character
+            sb.append((char)decimal);
+
+            temp.append(decimal);
+        }
+
+        return sb.toString();
+    }
     /**
      * 调整字节数组
      *
@@ -248,5 +293,36 @@ public class ByteUtils {
             j++;
         }
         return result;
+    }
+
+
+    /**
+     * 数组大小分割
+     *
+     * @param bytes 被分割的数组
+     * @param size  每个数组分割后的大小，小于等于size
+     * @return
+     */
+    public static List<byte[]> splitBytes(byte[] bytes, int size) {
+        if (size <= 0) {
+            throw new IllegalArgumentException("size不能小于等于0");
+        }
+        if (size > bytes.length) {
+            throw new RuntimeException("size:" + size + ",不能大于bytes的大小:" + bytes.length);
+        }
+        List<byte[]> temp = new ArrayList<>();
+
+        int packSize = bytes.length % size == 0 ? bytes.length / size : bytes.length / size + 1;
+
+        int from = 0, to = size;
+        for (int i = 0; i < packSize; i++) {
+            if (to > bytes.length)
+                to = bytes.length;
+            byte[] bytes1 = Arrays.copyOfRange(bytes, from, to);
+            from = to;
+            to += size;
+            temp.add(bytes1);
+        }
+        return temp;
     }
 }
